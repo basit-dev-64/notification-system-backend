@@ -24,9 +24,10 @@ export class NotificationQueue implements OnModuleInit, OnModuleDestroy {
       port: redisConfig.port,
       password: redisConfig.password,
       maxRetriesPerRequest: null,
+      connectTimeout: 30000, // 30 seconds for connection attempts
+      commandTimeout: 30000, // 30 seconds for command execution
       ...(useTLS && {
         tls: {},
-        connectTimeout: 10000,
       }),
     };
 
