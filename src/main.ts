@@ -20,7 +20,7 @@ async function bootstrap() {
   // });
 
   // For Render timeouts
-  app.use(timeout(30000));
+  app.use(timeout(300000));
 
   app.enableCors();
   
