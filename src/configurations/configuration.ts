@@ -1,7 +1,7 @@
 export default () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   mongoUri:
-    process.env.MONGO_URI || 'mongodb://localhost:27017/notification-system',
+    process.env.MONGO_URI ,
   jwtSecret: process.env.JWT_SECRET || 'change-me',
   redis: {
     host: process.env.REDIS_HOST || 'localhost',

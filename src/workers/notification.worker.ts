@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import { Worker, WorkerOptions } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import * as mongoose from 'mongoose';
@@ -53,11 +56,18 @@ class NotificationWorkerService {
   private initializeWorker() {
     const redisConfig = configuration().redis;
     
+    // Support for Upstash Redis (requires TLS) and local Redis
+    const useTLS = process.env.REDIS_USE_TLS === 'true' || redisConfig.host.includes('upstash.io');
+    
     const connection: WorkerOptions['connection'] = {
       host: redisConfig.host,
       port: redisConfig.port,
       password: redisConfig.password,
       maxRetriesPerRequest: null,
+      ...(useTLS && {
+        tls: {},
+        connectTimeout: 10000,
+      }),
     };
 
     this.worker = new Worker<NotificationJobData>(

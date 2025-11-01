@@ -16,11 +16,18 @@ export class NotificationQueue implements OnModuleInit, OnModuleDestroy {
   constructor() {
     const redisConfig = configuration().redis;
     
+    // Support for Upstash Redis (requires TLS) and local Redis
+    const useTLS = process.env.REDIS_USE_TLS === 'true' || redisConfig.host.includes('upstash.io');
+    
     const connection: QueueOptions['connection'] = {
       host: redisConfig.host,
       port: redisConfig.port,
       password: redisConfig.password,
       maxRetriesPerRequest: null,
+      ...(useTLS && {
+        tls: {},
+        connectTimeout: 10000,
+      }),
     };
 
     this.queue = new Queue<NotificationJobData>('notification-queue', {

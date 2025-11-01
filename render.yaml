@@ -1,0 +1,37 @@
+# Render Blueprint - Optional configuration file for Render deployment
+# This makes it easier to deploy multiple services at once
+
+services:
+  # Backend API Service
+  - type: web
+    name: notification-backend
+    env: node
+    region: oregon # or your preferred region
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 9091
+      # Add these via Render dashboard UI instead (secrets)
+      # MONGO_URI
+      # REDIS_HOST
+      # REDIS_PORT
+      # REDIS_PASSWORD
+      # REDIS_USE_TLS (set to "true" for Upstash)
+      # JWT_SECRET
+      # FRONTEND_URL
+
+  # Worker Service
+  - type: worker
+    name: notification-worker
+    env: node
+    region: oregon # Same region as backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run worker:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Add same env vars as backend via UI
+
