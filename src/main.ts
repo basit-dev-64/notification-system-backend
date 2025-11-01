@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import configuration from './configurations/configuration';
+import { timeout } from 'rxjs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,7 +18,12 @@ async function bootstrap() {
   //   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
   //   allowedHeaders: ['Content-Type', 'Authorization'],
   // });
+
+  // For Render timeouts
+  app.use(timeout(30000));
+
   app.enableCors();
+  
   await app.listen(configuration().port);
   console.log(`🚀 Server running on port ${configuration().port}`);
 }
