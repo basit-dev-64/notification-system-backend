@@ -1,98 +1,248 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Notification System Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A production-ready notification system built with NestJS that supports sending and scheduling notifications via Email, SMS, and Push channels using a queue-based architecture.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Live URL 
 
-## Description
+   https://notification-system-frontend-jqss.onrender.com/notifications
+   
+   Please Note : The server is running on free tier so it might take 2-5 mins for Cold start. Please be patient. Thankyou.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Architecture
 
-## Project setup
+### Overview
+The system follows a **modular microservices-like architecture** with clear separation of concerns:
 
-```bash
-$ npm install
+```
+API Server → Notification Service → Queue (Redis/BullMQ) → Worker Process → Channel Services
+     ↓              ↓                        ↓                   ↓                ↓
+  Auth Guard    CRUD Ops              Scheduled Jobs      Background Jobs    Email/SMS/Push
 ```
 
-## Compile and run the project
+
+### Key Components
+
+1. **API Server** (`src/main.ts`)
+   - RESTful API endpoints for notification management
+   - JWT-based authentication
+   - CORS enabled for frontend integration
+
+2. **Auth Module** (`src/modules/auth/`)
+   - User signup/login with bcrypt password hashing
+   - JWT token generation and validation
+   - Protected routes via AuthGuard
+
+3. **Notifications Module** (`src/modules/notifications/`)
+   - Notification CRUD operations
+   - Multi-channel support (Email, SMS, Push) via Factory pattern
+   - Notification logs with status tracking
+
+4. **Queue System** (`src/queues/notification.queue.ts`)
+   - BullMQ for job queuing with Redis
+   - Delayed job execution for scheduled notifications
+   - Automatic retries with exponential backoff
+
+5. **Worker Process** (`src/workers/notification.worker.ts`)
+   - Background process consuming jobs from Redis queue
+   - Processes scheduled notifications at specified times
+   - Updates notification logs (SENT/FAILED status)
+
+### Design Decisions
+
+**Why BullMQ over Cron Jobs?**
+- ✅ Precise timing (no polling overhead)
+- ✅ Scalable (handles millions of jobs)
+- ✅ Reliable (built-in retries, persistent storage)
+- ✅ Distributed (can scale workers independently)
+
+**Why Factory Pattern for Channels?**
+- Easy to add new notification channels
+- Clean separation of concerns
+- Type-safe channel selection
+
+**Why Separate Worker Process?**
+- Keeps API responsive (background processing)
+- Independent scaling of workers
+- Better resource management
+
+## Setup
+
+### Prerequisites
+- Node.js 18+
+- MongoDB (local or MongoDB Atlas)
+- Redis (local or Upstash)
+- npm or yarn
+
+### Installation
 
 ```bash
-# development
-$ npm run start
+# Install dependencies
+npm install
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Build the project
+npm run build
 ```
 
-## Run tests
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# MongoDB Configuration
+MONGO_URI=mongodb://admin:admin123@localhost:27017/notification-system?authSource=admin
+# OR for MongoDB Atlas:
+# MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/notification-system
+
+# Redis Configuration (Local)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=redis123
+REDIS_USE_TLS=false
+
+# Redis Configuration (Upstash - Production)
+# REDIS_HOST=your-host.upstash.io
+# REDIS_PORT=6379
+# REDIS_PASSWORD=your_password
+# REDIS_USE_TLS=true
+
+# JWT Secret (generate a strong random string)
+JWT_SECRET=your_super_secret_jwt_key_here
+
+# Server Configuration
+PORT=9091
+NODE_ENV=development
+
+# Frontend URL (for CORS in production)
+# FRONTEND_URL=https://your-frontend.vercel.app
+```
+
+### Running the Application
+
+#### Development Mode
+
+**Terminal 1 - API Server:**
+```bash
+npm run start:dev
+```
+
+**Terminal 2 - Worker Process:**
+```bash
+npm run worker
+```
+
+#### Production Mode
+
+**Terminal 1 - API Server:**
+```bash
+npm run build
+npm run start:prod
+```
+
+**Terminal 2 - Worker Process:**
+```bash
+npm run worker:prod
+```
+
+### Docker Setup
+
+**Start MongoDB and Redis:**
+```bash
+docker compose up -d
+```
+
+This starts:
+- MongoDB on port `27017`
+- Redis on port `6379`
+
+## Testing
 
 ```bash
-# unit tests
-$ npm run test
+# Unit tests
+npm run test
 
-# e2e tests
-$ npm run test:e2e
+# Watch mode
+npm run test:watch
 
-# test coverage
-$ npm run test:cov
+# Coverage report
+npm run test:cov
+
+# E2E tests
+npm run test:e2e
 ```
 
-## Deployment
+**Note:** Currently, tests focus on core functionality. Full test coverage is recommended for production.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## API Endpoints
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Authentication
+- `POST /auth/signup` - User registration
+- `POST /auth/login` - User login
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+### Notifications (Protected - requires JWT)
+- `GET /notifications` - List all notifications
+- `POST /notifications` - Create notification
+- `GET /notifications/:id` - Get single notification
+- `PATCH /notifications/:id` - Update notification
+- `DELETE /notifications/:id` - Delete notification
+- `POST /notifications/send` - Send or schedule notification
+- `GET /notifications/logs?type=status` - Get notification logs (filter by status)
+
+**Authentication:** Include JWT token in `Authorization: Bearer <token>` header
+
+## Assumptions & Shortcuts
+
+### Assumptions
+1. **Notification channels are placeholders** - Email/SMS/Push services return mock responses. In production, integrate with actual providers (SendGrid, Twilio, FCM).
+2. **Single worker instance** - For high-volume production, run multiple worker instances.
+3. **MongoDB for persistence** - Chosen for flexibility with nested notification data.
+4. **Upstash Redis** - Used for production (free tier suitable for small/medium scale).
+
+### Shortcuts Taken
+1. **No email/SMS provider integration** - Channels return success/failure without actual sending
+2. **Simple error handling** - Production should have more robust error handling and retry logic
+3. **Basic validation** - DTOs have basic validation; production needs stricter rules
+4. **CORS allows all origins** - Currently `app.enableCors()` allows all; configure properly for production
+5. **Worker runs separately** - For cost savings on Render, worker can run in same container as API
+
+### Trade-offs
+- **Simplicity over complexity** - Prioritized getting core functionality working
+- **Flexibility over performance** - MongoDB and BullMQ chosen for ease of use and scaling
+- **Development speed** - Some features (email validation, rate limiting) left for production hardening
+
+## Production Deployment
+
+###  Stack (Free Tier)
+- **Frontend**: Render (Web service)
+- **Backend API**: Render (Web Service)
+- **Worker**: Can run in same Render service OR separate Background Worker
+- **Database**: MongoDB Atlas (Free M0 cluster)
+- **Queue**: Upstash Redis (Free tier: 10K commands/day)
+
+### Cost Optimization
+- Use free tier services (MongoDB Atlas, Upstash)
+- Consider upgrading when traffic increases
+
+## Project Structure
+
+```
+src/
+├── main.ts                 # Application entry point
+├── app.module.ts          # Root module
+├── configurations/         # Environment configuration
+├── middlewares/           # Auth guard
+├── modules/
+│   ├── auth/             # Authentication module
+│   └── notifications/    # Notification module
+│       ├── channels/     # Email, SMS, Push services
+│       ├── dto/         # Data transfer objects
+│       ├── schemas/     # MongoDB schemas
+│       └── services/    # Business logic
+├── queues/               # BullMQ queue configuration
+├── services/            # Shared services (JWT)
+└── workers/            # Background worker process
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+MIT
