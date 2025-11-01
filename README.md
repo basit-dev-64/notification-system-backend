@@ -6,7 +6,9 @@ A production-ready notification system built with NestJS that supports sending a
 
    https://notification-system-frontend-jqss.onrender.com/notifications
    
-   Please Note : The server is running on free tier so it might take 2-5 mins for Cold start. Please be patient. Thankyou.
+   ### Please Note : 
+   1. The server is running on free tier so it might take 2-5 mins for Cold start. Please be patient. Thankyou.
+   2. The background worker could not be deployed on a server due to free tier limitations , thus the automatic dispatch of scheduled notifications only works  locally when the worker is running.
 
 ## Architecture
 
